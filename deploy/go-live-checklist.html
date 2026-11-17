@@ -60,7 +60,7 @@ var HEAD_MARKUP = "<title>SMS Gateway Go-Live</title><style>:root{--bg:#f5f6f3;-
 function appMain(STATE) {
   var SECTIONS = [
     { id: 'accounts', title: 'Accounts & external services', items: [
-      ['dns', 'DNS subdomain created', 'A record for sms.yourdomain.com points at the droplet’s IP'],
+      ['dns', 'DNS subdomain created', 'A record for sms.zupa.work points at the droplet’s IP'],
       ['fb-project', 'Firebase project created', 'Cloud Messaging enabled on the project'],
       ['fb-sa-key', 'Firebase service account key generated', 'Project Settings → Service Accounts → Generate new private key'],
       ['fb-android-app', 'Firebase Android app registered', 'Package name com.vernu.sms, google-services.json downloaded'],
@@ -77,7 +77,7 @@ function appMain(STATE) {
       ['pm2', 'pm2 installed'],
       ['redis', 'Redis installed, bound to 127.0.0.1 only'],
       ['certbot', 'certbot + nginx plugin installed'],
-      ['clone', 'Repo cloned onto the droplet', 'git clone https://github.com/textbee/textbee.git']
+      ['clone', 'Repo cloned onto the droplet', 'git clone git@github.com:Intelia/zupa-sms-service.git']
     ]},
     { id: 'backend', title: 'Backend config & build', items: [
       ['api-env', 'api/.env filled in', 'Mongo URI, JWT secret, Firebase fields, SMTP, Turnstile key'],
@@ -89,9 +89,9 @@ function appMain(STATE) {
     ]},
     { id: 'proxy', title: 'Reverse proxy & HTTPS', items: [
       ['nginx-block', 'nginx server block added', 'deploy/nginx/textbee.conf, server_name set to the real subdomain'],
-      ['dns-point', 'DNS actually resolves to the droplet', 'dig sms.yourdomain.com confirms it'],
+      ['dns-point', 'DNS actually resolves to the droplet', 'dig sms.zupa.work confirms it'],
       ['nginx-reload', 'nginx -t passes and nginx reloaded'],
-      ['certbot-run', 'HTTPS certificate issued', 'certbot --nginx -d sms.yourdomain.com'],
+      ['certbot-run', 'HTTPS certificate issued', 'certbot --nginx -d sms.zupa.work'],
       ['firewall', 'Firewall allows only 80/443 publicly', 'Redis stays on 127.0.0.1, never exposed']
     ]},
     { id: 'dashboard', title: 'Dashboard & API key', items: [
@@ -219,5 +219,5 @@ function appMain(STATE) {
   render();
 }
 
-appMain({ checked: {}, updatedAt: null });
+appMain({"checked":{"dns":true,"fb-project":true,"fb-sa-key":true,"smtp":true,"atlas-cluster":true,"atlas-network":true,"atlas-uri":true,"phone-sim":true,"pnpm":true,"pm2":true,"redis":true,"fb-android-app":true,"certbot":true,"api-env":true,"atlas-user":true,"node":true,"google-services-placed":true,"gradle-url":true,"web-env":true},"updatedAt":1794939314530});
 </script>

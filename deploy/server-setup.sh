@@ -30,6 +30,6 @@ echo "6. sudo cp deploy/nginx/textbee.conf /etc/nginx/sites-available/textbee.co
 echo "   # edit server_name to the real subdomain first"
 echo "7. sudo ln -s /etc/nginx/sites-available/textbee.conf /etc/nginx/sites-enabled/"
 echo "8. sudo nginx -t && sudo systemctl reload nginx"
-echo "9. sudo certbot --nginx -d sms.yourdomain.com"
+echo "9. sudo certbot --nginx -d sms.zupa.work"
 echo "10. (cd /opt/textbee && pm2 start deploy/ecosystem.config.js && pm2 save)"
 echo "11. pm2 startup   # run the printed command once"
