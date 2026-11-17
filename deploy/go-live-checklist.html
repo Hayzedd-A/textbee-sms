@@ -1,0 +1,223 @@
+<title>SMS Gateway Go-Live</title>
+<style>
+  :root {
+    --bg: #f5f6f3;
+    --surface: #ffffff;
+    --surface-2: #eef0ec;
+    --border: #dde1da;
+    --fg: #1a1f1b;
+    --muted: #6b726c;
+    --accent: #1f6f54;
+    --accent-soft: #e3f2ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14181a; --surface: #1c2124; --surface-2: #20262a; --border: #2b3236;
+      --fg: #edf1ee; --muted: #9aa39c; --accent: #3ddc97; --accent-soft: rgba(61,220,151,0.14);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14181a; --surface: #1c2124; --surface-2: #20262a; --border: #2b3236;
+    --fg: #edf1ee; --muted: #9aa39c; --accent: #3ddc97; --accent-soft: rgba(61,220,151,0.14);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--fg); font: 15px/1.4 'Inter', system-ui, sans-serif; padding: 0 16px; }
+  #app { max-width: 720px; margin: 0 auto; padding: 28px 0 64px; display: flex; flex-direction: column; gap: 20px; }
+  h1 { font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 1.5rem; margin: 0; text-wrap: balance; }
+  p.sub { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; }
+  .progress-shell { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+  .progress-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .progress-row .count { font-variant-numeric: tabular-nums; font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 1.1rem; }
+  .progress-row .pct { color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .bar { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+  .bar > span { display: block; height: 100%; background: var(--accent); border-radius: 999px; transition: width .25s ease; }
+  .meta { color: var(--muted); font-size: 0.78rem; }
+  section.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  section.card > .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+  section.card > .card-head h2 { font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 1rem; margin: 0; min-width: 0; }
+  section.card > .card-head .tag { font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  ul.items { list-style: none; margin: 0; padding: 0; }
+  ul.items li { display: flex; align-items: flex-start; gap: 12px; padding: 11px 18px; border-bottom: 1px solid var(--border); }
+  ul.items li:last-child { border-bottom: none; }
+  ul.items li.done { background: var(--accent-soft); }
+  ul.items input[type="checkbox"] { margin-top: 2px; width: 18px; height: 18px; accent-color: var(--accent); flex: none; cursor: pointer; }
+  ul.items label { display: flex; flex-direction: column; gap: 2px; min-width: 0; cursor: pointer; }
+  ul.items .label-text { font-size: 0.92rem; }
+  ul.items li.done .label-text { text-decoration: line-through; color: var(--muted); }
+  ul.items .hint { font-size: 0.78rem; color: var(--muted); }
+  .status { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 7px 14px; border-radius: 999px; font-size: 0.78rem; opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+  .status.show { opacity: .92; }
+  .status.warn { background: #b3542b; color: #fff; }
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap">
+<div id="app"></div>
+<div class="status" id="status"></div>
+<script>
+var HEAD_MARKUP = "<title>SMS Gateway Go-Live</title><style>:root{--bg:#f5f6f3;--surface:#ffffff;--surface-2:#eef0ec;--border:#dde1da;--fg:#1a1f1b;--muted:#6b726c;--accent:#1f6f54;--accent-soft:#e3f2ec}@media (prefers-color-scheme: dark){:root:not([data-theme=\"light\"]){--bg:#14181a;--surface:#1c2124;--surface-2:#20262a;--border:#2b3236;--fg:#edf1ee;--muted:#9aa39c;--accent:#3ddc97;--accent-soft:rgba(61,220,151,0.14);color-scheme:dark}}:root[data-theme=\"dark\"]{--bg:#14181a;--surface:#1c2124;--surface-2:#20262a;--border:#2b3236;--fg:#edf1ee;--muted:#9aa39c;--accent:#3ddc97;--accent-soft:rgba(61,220,151,0.14);color-scheme:dark}*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font:15px/1.4 'Inter', system-ui, sans-serif;padding:0 16px}#app{max-width:720px;margin:0 auto;padding:28px 0 64px;display:flex;flex-direction:column;gap:20px}h1{font-family:'Space Grotesk', system-ui, sans-serif;font-size:1.5rem;margin:0;text-wrap:balance}p.sub{margin:4px 0 0;color:var(--muted);font-size:0.9rem}.progress-shell{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}.progress-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px}.progress-row .count{font-variant-numeric:tabular-nums;font-family:'Space Grotesk', system-ui, sans-serif;font-size:1.1rem}.progress-row .pct{color:var(--accent);font-weight:600;font-variant-numeric:tabular-nums}.bar{height:8px;border-radius:999px;background:var(--surface-2);overflow:hidden}.bar>span{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .25s ease}.meta{color:var(--muted);font-size:0.78rem}section.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}section.card>.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border)}section.card>.card-head h2{font-family:'Space Grotesk', system-ui, sans-serif;font-size:1rem;margin:0;min-width:0}section.card>.card-head .tag{font-size:0.75rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}ul.items{list-style:none;margin:0;padding:0}ul.items li{display:flex;align-items:flex-start;gap:12px;padding:11px 18px;border-bottom:1px solid var(--border)}ul.items li:last-child{border-bottom:none}ul.items li.done{background:var(--accent-soft)}ul.items input[type=\"checkbox\"]{margin-top:2px;width:18px;height:18px;accent-color:var(--accent);flex:none;cursor:pointer}ul.items label{display:flex;flex-direction:column;gap:2px;min-width:0;cursor:pointer}ul.items .label-text{font-size:0.92rem}ul.items li.done .label-text{text-decoration:line-through;color:var(--muted)}ul.items .hint{font-size:0.78rem;color:var(--muted)}.status{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:7px 14px;border-radius:999px;font-size:0.78rem;opacity:0;pointer-events:none;transition:opacity .2s ease}.status.show{opacity:.92}.status.warn{background:#b3542b;color:#fff}</style><link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap\"><div id=\"app\"></div><div class=\"status\" id=\"status\"></div>";
+
+function appMain(STATE) {
+  var SECTIONS = [
+    { id: 'accounts', title: 'Accounts & external services', items: [
+      ['dns', 'DNS subdomain created', 'A record for sms.yourdomain.com points at the droplet’s IP'],
+      ['fb-project', 'Firebase project created', 'Cloud Messaging enabled on the project'],
+      ['fb-sa-key', 'Firebase service account key generated', 'Project Settings → Service Accounts → Generate new private key'],
+      ['fb-android-app', 'Firebase Android app registered', 'Package name com.vernu.sms, google-services.json downloaded'],
+      ['smtp', 'SMTP account ready', 'Host, port, user, password for verification emails'],
+      ['atlas-cluster', 'MongoDB Atlas cluster created'],
+      ['atlas-user', 'Atlas DB user created', 'Dedicated app user, not the Atlas org admin'],
+      ['atlas-network', 'Atlas network access allows the droplet’s IP'],
+      ['atlas-uri', 'Atlas connection string in hand'],
+      ['phone-sim', 'Gateway phone + active SIM set aside']
+    ]},
+    { id: 'droplet', title: 'Droplet base packages', items: [
+      ['node', 'Node.js 24.15+ installed'],
+      ['pnpm', 'pnpm installed'],
+      ['pm2', 'pm2 installed'],
+      ['redis', 'Redis installed, bound to 127.0.0.1 only'],
+      ['certbot', 'certbot + nginx plugin installed'],
+      ['clone', 'Repo cloned onto the droplet', 'git clone https://github.com/textbee/textbee.git']
+    ]},
+    { id: 'backend', title: 'Backend config & build', items: [
+      ['api-env', 'api/.env filled in', 'Mongo URI, JWT secret, Firebase fields, SMTP, Turnstile key'],
+      ['web-env', 'web/.env filled in', 'NextAuth secret, API base URL, site URL'],
+      ['api-build', 'API installed & built', 'pnpm install && pnpm build in api/'],
+      ['web-build', 'Web dashboard installed & built', 'pnpm install && pnpm build in web/'],
+      ['pm2-start', 'pm2 processes started', 'textbee-api and textbee-web via deploy/ecosystem.config.js'],
+      ['pm2-startup', 'pm2 configured to survive reboot', 'pm2 save && pm2 startup']
+    ]},
+    { id: 'proxy', title: 'Reverse proxy & HTTPS', items: [
+      ['nginx-block', 'nginx server block added', 'deploy/nginx/textbee.conf, server_name set to the real subdomain'],
+      ['dns-point', 'DNS actually resolves to the droplet', 'dig sms.yourdomain.com confirms it'],
+      ['nginx-reload', 'nginx -t passes and nginx reloaded'],
+      ['certbot-run', 'HTTPS certificate issued', 'certbot --nginx -d sms.yourdomain.com'],
+      ['firewall', 'Firewall allows only 80/443 publicly', 'Redis stays on 127.0.0.1, never exposed']
+    ]},
+    { id: 'dashboard', title: 'Dashboard & API key', items: [
+      ['dashboard-up', 'Dashboard loads over HTTPS'],
+      ['admin-account', 'Admin account created on the dashboard'],
+      ['email-verified', 'Account email verified', 'Confirms SMTP is actually working end to end'],
+      ['api-key', 'API key generated for Zupa’s app']
+    ]},
+    { id: 'android', title: 'Android gateway phone', items: [
+      ['google-services-placed', 'google-services.json placed', 'android/app/src/prod/google-services.json'],
+      ['gradle-url', 'build.gradle API_BASE_URL points at our domain', 'Trailing slash matters'],
+      ['apk-build', 'Release APK built', './gradlew assembleProdRelease or deploy/build-android.sh'],
+      ['apk-install', 'APK installed on the gateway phone'],
+      ['receive-sms-on', '“Receive SMS” enabled in the app'],
+      ['battery-opt', 'Battery optimization disabled for the app', 'isIgnoringBatteryOptimizations should read true'],
+      ['device-registered', 'Phone registered in the dashboard', 'QR code or API key pairing'],
+      ['device-online', 'Device shows online/connected in the dashboard']
+    ]},
+    { id: 'golive', title: 'Integration test & go-live', items: [
+      ['webhook-created', 'Webhook subscription created', 'MESSAGE_RECEIVED event, HTTPS delivery URL, signing secret ≥ 20 chars'],
+      ['webhook-verify', 'Our endpoint verifies the HMAC signature', 'X-Textbee-Signature, reject timestamps older than 300s'],
+      ['test-outbound', 'Test SMS sent via POST /gateway/send-sms and received on a real phone'],
+      ['test-inbound', 'Test SMS sent to the gateway number, MESSAGE_RECEIVED webhook fired'],
+      ['delivery-status', 'MESSAGE_SENT / MESSAGE_DELIVERED events observed'],
+      ['atlas-backup', 'Atlas backup/retention policy confirmed'],
+      ['secrets-storage', 'Zupa’s API key stored in a secrets manager, not hardcoded']
+    ]}
+  ];
+
+  var TOTAL = SECTIONS.reduce(function (n, s) { return n + s.items.length; }, 0);
+  var checked = STATE.checked || {};
+  var updatedAt = STATE.updatedAt || null;
+  var canWrite = true;
+  var saveTimer = null;
+
+  function fmtTime(ts) {
+    if (!ts) return 'never saved yet';
+    try {
+      return 'saved ' + new Date(ts).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    } catch (e) { return 'saved'; }
+  }
+
+  function countDone(items) {
+    return items.filter(function (it) { return checked[it[0]]; }).length;
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  }
+
+  function render() {
+    var doneTotal = Object.keys(checked).filter(function (k) { return checked[k]; }).length;
+    var pct = TOTAL ? Math.round((doneTotal / TOTAL) * 100) : 0;
+    var html = '';
+    html += '<header><h1>SMS gateway go-live checklist</h1>';
+    html += '<p class="sub">Self-hosted TextBee on the droplet — tracking every box through launch.</p></header>';
+    html += '<div class="progress-shell"><div class="progress-row"><span class="count">' + doneTotal + ' / ' + TOTAL + ' done</span><span class="pct">' + pct + '%</span></div>';
+    html += '<div class="bar"><span style="width:' + pct + '%"></span></div><div class="meta">' + fmtTime(updatedAt) + (canWrite ? '' : ' · view only') + '</div></div>';
+    SECTIONS.forEach(function (section) {
+      var d = countDone(section.items);
+      html += '<section class="card"><div class="card-head"><h2>' + esc(section.title) + '</h2><span class="tag">' + d + ' / ' + section.items.length + '</span></div><ul class="items">';
+      section.items.forEach(function (item) {
+        var id = item[0], label = item[1], hint = item[2];
+        var isDone = !!checked[id];
+        html += '<li class="' + (isDone ? 'done' : '') + '"><input type="checkbox" id="chk-' + id + '" data-id="' + id + '" ' + (isDone ? 'checked' : '') + '><label for="chk-' + id + '"><span class="label-text">' + esc(label) + '</span>';
+        if (hint) html += '<span class="hint">' + esc(hint) + '</span>';
+        html += '</label></li>';
+      });
+      html += '</ul></section>';
+    });
+    document.getElementById('app').innerHTML = html;
+    var boxes = document.querySelectorAll('ul.items input[type="checkbox"]');
+    for (var i = 0; i < boxes.length; i++) {
+      boxes[i].disabled = !canWrite;
+      boxes[i].addEventListener('change', (function (box) {
+        return function () {
+          checked[box.getAttribute('data-id')] = box.checked;
+          render();
+          scheduleSave();
+        };
+      })(boxes[i]));
+    }
+  }
+
+  function showStatus(text, warn) {
+    var el = document.getElementById('status');
+    el.textContent = text;
+    el.className = 'status show' + (warn ? ' warn' : '');
+    clearTimeout(el._t);
+    el._t = setTimeout(function () { el.className = 'status'; }, 1800);
+  }
+
+  function scheduleSave() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(doSave, 300);
+  }
+
+  function fullDocument(state) {
+    var skeleton = '<' + '!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+      + '<style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body>';
+    var inner = 'var HEAD_MARKUP = ' + JSON.stringify(HEAD_MARKUP) + ';\n'
+      + appMain.toString() + '\nappMain(' + JSON.stringify(state) + ');';
+    return skeleton + HEAD_MARKUP + '<scr' + 'ipt>' + inner + '<\/scr' + 'ipt></body></html>';
+  }
+
+  function doSave() {
+    if (!canWrite || !window.claude || !window.claude.use) return;
+    window.claude.use('artifact').then(function (artifact) {
+      if (!artifact) { return; }
+      updatedAt = Date.now();
+      artifact.publish(fullDocument({ checked: checked, updatedAt: updatedAt })).then(function () {
+        showStatus('Saved');
+      }).catch(function (err) {
+        if (err && (err.code === 'not_granted' || err.code === 'not_writer')) {
+          canWrite = false;
+          render();
+          showStatus('View only — changes won’t be saved', true);
+        } else if (!err || err.code !== 'conflict') {
+          showStatus('Couldn’t save, will retry', true);
+        }
+      });
+    });
+  }
+
+  render();
+}
+
+appMain({ checked: {}, updatedAt: null });
+</script>

@@ -48,7 +48,12 @@ android {
     }
 
     flavorDimensions "environment"
-    
+
+    // Pass -PAPI_BASE_URL_OVERRIDE=https://your-tunnel-url/api/v1/ on the gradlew
+    // command line to point the prod flavor at a local tunnel for testing, without
+    // touching the real production URL below. Omit it for a normal build.
+    def apiBaseUrlOverride = project.findProperty("API_BASE_URL_OVERRIDE")
+
     productFlavors {
         dev {
             dimension "environment"
@@ -58,11 +63,11 @@ android {
             buildConfigField "String", "ENVIRONMENT", '"development"'
             resValue "string", "app_name", "textbee.dev (Dev)"
         }
-        
+
         prod {
             dimension "environment"
             applicationId "com.vernu.sms"
-            buildConfigField "String", "API_BASE_URL", '"https://api.textbee.dev/api/v1/"'
+            buildConfigField "String", "API_BASE_URL", apiBaseUrlOverride ? "\"${apiBaseUrlOverride}\"" : '"https://sms.yourdomain.com/api/v1/"'
             buildConfigField "String", "ENVIRONMENT", '"production"'
             resValue "string", "app_name", "textbee.dev"
         }
