@@ -21,7 +21,7 @@ sudo systemctl enable redis-server
 sudo apt-get install -y certbot python3-certbot-nginx
 
 echo "Base packages installed. Next steps:"
-echo "1. git clone https://github.com/textbee/textbee.git /opt/textbee"
+echo "1. git clone git@github.com:Intelia/zupa-sms-service.git /opt/textbee"
 echo "2. cp deploy/api.env.example /opt/textbee/api/.env   # fill in Atlas URI, Firebase, SMTP"
 echo "3. cp deploy/web.env.example /opt/textbee/web/.env   # fill in domain, NEXTAUTH_SECRET"
 echo "4. (cd /opt/textbee/api && pnpm install && pnpm build)"
